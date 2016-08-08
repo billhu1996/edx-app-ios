@@ -11,61 +11,48 @@ import Foundation
 public class UserPreferenceManager : NSObject {
     
     private let networkManager : NetworkManager
-    private let session: OEXSession
-    private let currentPreferenceFeed = BackedFeed<UserPreference>()
-    private let currentPreferenceUpdateStream = Sink<UserPreference>()
-    private let cache = LiveObjectCache<Feed<UserPreference>>()
+    private var preferencesFeed = BackedFeed<UserPreference?>()
     
-    public init(networkManager : NetworkManager, session : OEXSession) {
+    public init(networkManager : NetworkManager) {
         self.networkManager = networkManager
-        self.session = session
         
         super.init()
         
-        self.currentPreferenceFeed.backingStream.addBackingStream(currentPreferenceUpdateStream)
+        NSNotificationCenter.defaultCenter().oex_addObserver(self, name: OEXSessionEndedNotification) { (_, observer, _) in
+            observer.clearFeed()
+        }
         
-        NSNotificationCenter.defaultCenter().oex_addObserver(self, name: OEXSessionEndedNotification) { (_, owner, _) -> Void in
-            owner.sessionChanged()
-        }
-        NSNotificationCenter.defaultCenter().oex_addObserver(self, name: OEXSessionStartedNotification) { (_, owner, _) -> Void in
-            owner.sessionChanged()
-        }
-        self.sessionChanged()
-    }
-    
-    public func feedForUser(username : String) -> Feed<UserPreference> {
-        return self.cache.objectForKey(username) {
-            let request = PreferenceAPI.preferenceRequest(username)
-            return Feed(request: request, manager: self.networkManager)
+        NSNotificationCenter.defaultCenter().oex_addObserver(self, name: OEXSessionStartedNotification) { (notification, observer, _) -> Void in
+            if let userDetails = notification.userInfo?[OEXSessionStartedUserDetailsKey] as? OEXUserDetails {
+                observer.setupFeedWithUserDetails(userDetails)
+            }
         }
     }
     
-    private func sessionChanged() {
-        if let username = self.session.currentUser?.username {
-            self.currentPreferenceFeed.backWithFeed(self.feedForUser(username))
-        }
-        else {
-            self.currentPreferenceFeed.removeBacking()
-            // clear the stream
-            self.currentPreferenceUpdateStream.send(NSError.oex_unknownError())
-        }
-        if self.session.currentUser == nil {
-            self.cache.empty()
-        }
+    public var feed: BackedFeed<UserPreference?> {
+        return preferencesFeed
     }
     
-    // Feed that updates if the current user changes
-//    public func feedForCurrentUser() -> Feed<UserPreference> {
-//        return currentPreferenceFeed
-//    }
-//    
-//    public func updateCurrentUserProfile(profile : UserProfile, handler : Result<UserPreference> -> Void) {
-//        let request = PreferenceAPI.preferenceUpdateRequest(profile)
-//        self.networkManager.taskForRequest(request) { result -> Void in
-//            if let data = result.data {
-//                self.currentPreferenceUpdateStream.send(Success(data))
-//            }
-//            handler(result.data.toResult(result.error))
-//        }
-//    }
+    private func clearFeed() {
+        let feed = Feed<UserPreference?> { stream in
+            stream.removeAllBackings()
+            stream.send(Success(nil))
+        }
+        
+        preferencesFeed.backWithFeed(feed)
+        preferencesFeed.refresh()
+    }
+    
+    public func setupFeedWithUserDetails(userDetails: OEXUserDetails) {
+        guard let username = userDetails.username else { return }
+        let feed = freshFeedWithUsername(username)
+        preferencesFeed.backWithFeed(feed.map{x in x})
+        preferencesFeed.refresh()
+    }
+    
+    public func freshFeedWithUsername(username: String) -> Feed<UserPreference> {
+        let request = UserPreferenceAPI.preferenceRequest(username)
+        return Feed(request: request, manager: networkManager, persistResponse: true)
+    }
+    
 }

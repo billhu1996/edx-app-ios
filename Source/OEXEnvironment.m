@@ -105,8 +105,7 @@
              session:env.session];
             UserPreferenceManager* userPreferenceManager =
             [[UserPreferenceManager alloc]
-             initWithNetworkManager:env.networkManager
-             session:env.session];
+             initWithNetworkManager:env.networkManager];
             CourseDataManager* courseDataManager =
             [[CourseDataManager alloc]
              initWithAnalytics:env.analytics

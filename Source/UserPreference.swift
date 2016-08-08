@@ -12,25 +12,22 @@ import edXCore
 public class UserPreference {
     
     enum PreferenceKeys: String, RawStringExtractable {
-        case Username = "username"
         case PrefLang = "pref-lang"
         case TimeZone = "time_zone"
     }
-    
-    var username: String?
+
     var timeZone: String?
     var prefLang: String?
     
-    var hasUpdates: Bool { return updateDictionary.count > 0 }
-    var updateDictionary = [String: AnyObject]()
-    
     public init?(json: JSON) {
         prefLang = json[PreferenceKeys.PrefLang].string ?? ""
-        timeZone = json[PreferenceKeys.TimeZone].string ?? ""
+        timeZone = json[PreferenceKeys.TimeZone].string ?? "UTC"
+        
+        // Set all dates to convert to user time zone chosen on web platform
+        NSTimeZone.setDefaultTimeZone(NSTimeZone(name: timeZone!)!)
     }
     
-    internal init(username : String, prefLang: String? = nil, timeZone : String? = nil) {
-        self.username = username
+    internal init(prefLang: String? = nil, timeZone : String? = nil) {
         self.prefLang = prefLang
         self.timeZone = timeZone
     }

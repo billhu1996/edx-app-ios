@@ -50,7 +50,7 @@ class TestRouterEnvironment : RouterEnvironment {
             interface: interface,
             pushSettings: OEXPushSettingsManager(),
             userProfileManager:UserProfileManager(networkManager: mockNetworkManager, session: session),
-            userPreferenceManager: UserPreferenceManager(networkManager: mockNetworkManager, session: session)
+            userPreferenceManager: UserPreferenceManager(networkManager: mockNetworkManager)
         )
         
         super.init(analytics: analytics,
