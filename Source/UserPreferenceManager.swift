@@ -11,7 +11,7 @@ import Foundation
 public class UserPreferenceManager : NSObject {
     
     private let networkManager : NetworkManager
-    private var preferencesFeed = BackedFeed<UserPreference?>()
+    private let preferencesFeed = BackedFeed<UserPreference?>()
     
     public init(networkManager : NetworkManager) {
         self.networkManager = networkManager
@@ -43,14 +43,14 @@ public class UserPreferenceManager : NSObject {
         preferencesFeed.refresh()
     }
     
-    public func setupFeedWithUserDetails(userDetails: OEXUserDetails) {
+    private func setupFeedWithUserDetails(userDetails: OEXUserDetails) {
         guard let username = userDetails.username else { return }
         let feed = freshFeedWithUsername(username)
         preferencesFeed.backWithFeed(feed.map{x in x})
         preferencesFeed.refresh()
     }
     
-    public func freshFeedWithUsername(username: String) -> Feed<UserPreference> {
+    private func freshFeedWithUsername(username: String) -> Feed<UserPreference> {
         let request = UserPreferenceAPI.preferenceRequest(username)
         return Feed(request: request, manager: networkManager, persistResponse: true)
     }
