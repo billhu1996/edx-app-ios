@@ -11,8 +11,12 @@ import Foundation
 
 class UserPreferenceManagerTests : XCTestCase {
     
-    func testEnrollmentsLoginLogout() {
-        let preferences = UserPreference(prefLang: "en", timeZone: "Asia/Tokyo")
+    func testUserPreferencesLoginLogout() {
+        let userPrefernces = UserPreference(json: ["time_zone": "Asia/Tokyo"])
+        
+        XCTAssertNotNil(userPrefernces)
+        
+        let preferences = userPrefernces!
         
         let environment = TestRouterEnvironment()
         environment.mockNetworkManager.interceptWhenMatching({_ in true }) {
@@ -31,7 +35,7 @@ class UserPreferenceManagerTests : XCTestCase {
         stepRunLoop()
         
         waitForStream(feed.output)
-        XCTAssertEqual(feed.output.value!!.timeZone, preferences.timeZone)
+        XCTAssertEqual(feed.output.value??.timeZone, preferences.timeZone)
         
         // Log out. Now preferences should be cleared
         environment.session.closeAndClearSession()

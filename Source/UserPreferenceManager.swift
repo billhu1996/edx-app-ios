@@ -18,6 +18,14 @@ public class UserPreferenceManager : NSObject {
         
         super.init()
         
+        addObservers()
+    }
+    
+    public var feed: BackedFeed<UserPreference?> {
+        return preferencesFeed
+    }
+    
+    private func addObservers() {
         NSNotificationCenter.defaultCenter().oex_addObserver(self, name: OEXSessionEndedNotification) { (_, observer, _) in
             observer.clearFeed()
         }
@@ -27,10 +35,6 @@ public class UserPreferenceManager : NSObject {
                 observer.setupFeedWithUserDetails(userDetails)
             }
         }
-    }
-    
-    public var feed: BackedFeed<UserPreference?> {
-        return preferencesFeed
     }
     
     private func clearFeed() {
